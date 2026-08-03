@@ -1,4 +1,3 @@
-import os
 import requests
 from kivy.app import App
 from kivy.uix.boxlayout import BoxLayout
@@ -7,11 +6,9 @@ from kivy.uix.textinput import TextInput
 from kivy.uix.button import Button
 from kivy.uix.scrollview import ScrollView
 from kivy.clock import Clock
-from groq import Groq
 
 class ChatApp(App):
     def build(self):
-        self.client = None
         self.layout = BoxLayout(orientation='vertical', padding=10, spacing=10)
         self.layout.add_widget(Label(text="Groq AI Chatbot", font_size='20sp', size_hint_y=None, height=40))
         
@@ -49,22 +46,30 @@ class ChatApp(App):
         self.chat_history.text += f"\n\n[b]You:[/b] {user_text}"
         self.msg_input.text = ""
         
-        if not self.client:
-            self.client = Groq(api_key=api_key)
-            
-        Clock.schedule_once(lambda dt: self.get_ai_response(user_text), 0.1)
+        Clock.schedule_once(lambda dt: self.get_ai_response(user_text, api_key), 0.1)
 
-    def get_ai_response(self, user_text):
+    def get_ai_response(self, user_text, api_key):
+        url = "https://api.groq.com/openai/v1/chat/completions"
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json"
+        }
+        payload = {
+            "model": "llama-3.3-70b-versatile",
+            "messages": [{"role": "user", "content": user_text}]
+        }
+        
         try:
-            completion = self.client.chat.completions.create(
-                model="llama-3.3-70b-versatile",
-                messages=[{"role": "user", "content": user_text}],
-            )
-            response = completion.choices[0].message.content
-            self.chat_history.text += f"\n\n[b]AI:[/b] {response}"
+            res = requests.post(url, json=payload, headers=headers, timeout=10)
+            if res.status_code == 200:
+                response_data = res.json()
+                bot_reply = response_data['choices'][0]['message']['content']
+                self.chat_history.text += f"\n\n[b]AI:[/b] {bot_reply}"
+            else:
+                self.chat_history.text += f"\n\n[color=ff0000]API Error {res.status_code}:[/color] {res.text}"
         except Exception as e:
             self.chat_history.text += f"\n\n[color=ff0000]Error:[/color] {str(e)}"
 
 if __name__ == '__main__':
     ChatApp().run()
-          
+        
