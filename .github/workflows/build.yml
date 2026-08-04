@@ -13,28 +13,20 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Set up Python
-      uses: actions/setup-python@v5
+    - name: Build APK using Buildozer Docker Image
+      uses: addnab/docker-run-action@v3
       with:
-        python-version: '3.10'
+        image: kivy/buildozer:latest
+        options: -v ${{ github.workspace }}:/home/user/hostroot
+        run: |
+          buildozer -v android debug
 
-    - name: Install dependencies
-      run: |
-        pip install --upgrade pip setuptools wheel
-        pip install buildozer cython==0.29.33
-        sudo apt-get update
-        sudo apt-get install -y build-essential libssl-dev libffi-dev python3-dev libtool autoconf pkg-config zlib1g-dev scons ccache openjdk-17-jdk
-
-    - name: Accept Android SDK Licenses
-      run: |
-        mkdir -p ~/.android
-        touch ~/.android/repositories.cfg
-        yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
-
-    - name: Build APK with Buildozer
-      run: |
-        yes | buildozer -v android debug
-
+    - name: Upload APK Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: Android-APK
+        path: bin/*.apk
+        
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
       with:
