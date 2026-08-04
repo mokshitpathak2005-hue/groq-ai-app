@@ -19,14 +19,8 @@ jobs:
         image: kivy/buildozer:latest
         options: -v ${{ github.workspace }}:/home/user/hostroot
         run: |
-          buildozer -v android debug
+          buildozer --warn_on_root=0 -v android debug
 
-    - name: Upload APK Artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: Android-APK
-        path: bin/*.apk
-        
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
       with:
